@@ -11,5 +11,6 @@ F-H: extractLineScanData.mat, findDiam_lineScan.mat, linescanDiamAnalysis.mat, l
 Run the top function 'extractLineScanData.mat' to call on the subfunctions which extract the diameter and RBCV from linescan 2P data. 
 Once RBCV data is extracted, call 'findAvg_RBCV_diam.mat' to average the RBCV during rest periods for individual vessels, and then use 'compareGrps_avgRBCV_diam.mat' to compare all average RBCV readings between the HC and V1. 
 
+# Figure 3
 
 
