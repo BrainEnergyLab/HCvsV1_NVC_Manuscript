@@ -40,4 +40,15 @@ A-D: Run the top function 'entireNetTrace_PPM_szPks.mat', and this will find the
 E-J: First call the function 'cutByCMRO2Events_probe.mat' to find all the peaks in the CMRO2 traces for each recording within the top directory. This will cut around these CMRO2 events, and also the corresponding haemodynamic parameters, i.e. Hbt. Once you have extracted these CMRO2 peaks for both groups you wish to compare (i.e. HC and V1) - call the function 'avgCMRO2Peaks.mat' to compare the average size of the CMRO2 traces and corresponding Hbt traces between groups. 
 
 
+# Figure 7 
+
+capSpacing_fromDistMap.mat, runpdesinglecap.mat, pdesinglecap.mat, replicateFig7Plots.mat 
+
+Run the 'capSpacing_fromDistMap.mat' to find all the distance maps in the experimental directory and find the capillary spacing for multiple percentiles. This will then get average capillary spacings per recording, and then an overall average (from these averages) per region. This cap spacing info can then be fed into the oxygen diffusion model. 
+
+Run the top function 'runpdesinglecap.mat' to run the oxygen diffusion model for both regions, based on the capillary spacings inputted. This will call the subfunction 'pdesinglecap.mat' which calculates the oxygen diffusion across the tissue based on a single capillary in an arena with specified spacings to the nearest capillary. 
+
+Run the script 'replicateFig7Plots.mat' to generate the figures found in figure 7 of the manuscript (i.e. can calculate the Vmax, etc.). 
+
+
 
