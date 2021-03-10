@@ -42,13 +42,12 @@ E-J: First call the function 'cutByCMRO2Events_probe.mat' to find all the peaks 
 
 # Figure 7 
 
-capSpacing_fromDistMap.mat, runpdesinglecap.mat, pdesinglecap.mat, replicateFig7Plots.mat 
+capSpacing_fromDistMap.mat, runpdesinglecapDwall.mat, pdesinglecapDwall.mat
 
 Run the 'capSpacing_fromDistMap.mat' to find all the distance maps in the experimental directory and find the capillary spacing for multiple percentiles. This will then get average capillary spacings per recording, and then an overall average (from these averages) per region. This cap spacing info can then be fed into the oxygen diffusion model. 
 
-Run the top function 'runpdesinglecap.mat' to run the oxygen diffusion model for both regions, based on the capillary spacings inputted. This will call the subfunction 'pdesinglecap.mat' which calculates the oxygen diffusion across the tissue based on a single capillary in an arena with specified spacings to the nearest capillary. 
+Run the top function 'runpdesinglecapDwall.mat' to run the oxygen diffusion model for both regions, based on the capillary spacings inputted. This will call the subfunction 'pdesinglecapDwall.mat' which calculates the oxygen diffusion across the tissue based on a single capillary with a wall in an arena with specified spacings to the nearest capillary. 
 
-Run the script 'replicateFig7Plots.mat' to generate the figures found in figure 7 of the manuscript (i.e. can calculate the Vmax, etc.). 
 
 
 
