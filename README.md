@@ -9,9 +9,13 @@ https://www.biorxiv.org/content/10.1101/835728v1
 A-C: extractProbeData.mat, extractRestAndLocoData_probe.mat, avgRestAndLocoData_probe 
 Run these code in the order above to convert the raw oxy-CBF probe data into a mat file, and then find the average CMRO2, CBF and SO2 values during rest periods. 
 
+_NB/ The code to extract baseline haemodynamic data during rest for figure 2, is also used in supplementary figure 10.  _
+
 F-J: extractLineScanData.mat, findDiam_lineScan.mat, linescanDiamAnalysis.mat, linescanVelocityAnalysis.mat, findAvg_RBCV_diam.mat, compareGrps_avgRBCV_diam.mat, extractHaematocrit.mat, extractRBCflux.mat
 Run the top function 'extractLineScanData.mat' to call on the subfunctions which extract the diameter and RBCV from linescan 2P data. Call 'extractHaematocrit.mat' to extract the haematocrit over time, and 'extractRBCflux.mat' to extract the RBCs per second. 
 Once linescan data is extracted, call 'getAvgLinescanAll.mat' to get the average values for each measure during rest periods (i.e. removes locomotion, and finds mean, std, and coefficient of variation). 
+
+_NB/ The code to extract linescan diameter and velocity traces for figure 2, is also used in supplementary figures 1 & 7.  _
 
 
 # Figure 3
@@ -27,6 +31,8 @@ Once vessel and calcium time series were extracted, the calcium peaks were detec
 
 
 The 'avgCalcPeaks' function takes all the detected calcium peaks across experimental directories, and sorts them to find responsive vessel dilations, categorise by locomotion/stimulation condition, neuron type or brain layer, etc. 
+
+_NB/ The code to extract xy vessel diameter and neuronal calcium traces for figure 3, is also used in supplementary figures 2-4 & supplementary figures 6-7.  _
 
 
 # Figure 5
@@ -47,6 +53,16 @@ capSpacing_fromDistMap.mat, runpdesinglecapDwall.mat, pdesinglecapDwall.mat
 Run the 'capSpacing_fromDistMap.mat' to find all the distance maps in the experimental directory and find the capillary spacing for multiple percentiles. This will then get average capillary spacings per recording, and then an overall average (from these averages) per region. This cap spacing info can then be fed into the oxygen diffusion model. 
 
 Run the top function 'runpdesinglecapDwall.mat' to run the oxygen diffusion model for both regions, based on the capillary spacings inputted. This will call the subfunction 'pdesinglecapDwall.mat' which calculates the oxygen diffusion across the tissue based on a single capillary with a wall in an arena with specified spacings to the nearest capillary. 
+
+
+# Supplementary Figure 1
+
+extractLScalcium.mat, cutByLScalc.mat
+
+Run 'extractLScalcium.mat' to search for the calcium.tif file and create a trace of light intensity changes over time (i.e. when calcium activity increases vs baseline). You must also have run the mat file to extract RBCV or diameter over time within the same directory (NB/ see info for figure 2). 
+
+Use the cutByLScalc.mat file to detect peaks in the calcium, and cut around corresponding RBCV or diameter traces (need to edit prefs / matfile search to look for velocity or diameter file). 
+
 
 
 
