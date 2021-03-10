@@ -15,7 +15,7 @@ F-J: extractLineScanData.mat, findDiam_lineScan.mat, linescanDiamAnalysis.mat, l
 Run the top function 'extractLineScanData.mat' to call on the subfunctions which extract the diameter and RBCV from linescan 2P data. Call 'extractHaematocrit.mat' to extract the haematocrit over time, and 'extractRBCflux.mat' to extract the RBCs per second. 
 Once linescan data is extracted, call 'getAvgLinescanAll.mat' to get the average values for each measure during rest periods (i.e. removes locomotion, and finds mean, std, and coefficient of variation). 
 
-_NB/ The code to extract linescan diameter and velocity traces for figure 2, is also used in supplementary figures 1 & 7.  _
+*NB/ The code to extract linescan diameter and velocity traces for figure 2, is also used in supplementary figures 1 & 7.*
 
 
 # Figure 3
@@ -32,7 +32,7 @@ Once vessel and calcium time series were extracted, the calcium peaks were detec
 
 The 'avgCalcPeaks' function takes all the detected calcium peaks across experimental directories, and sorts them to find responsive vessel dilations, categorise by locomotion/stimulation condition, neuron type or brain layer, etc. 
 
-_NB/ The code to extract xy vessel diameter and neuronal calcium traces for figure 3, is also used in supplementary figures 2-4 & supplementary figures 6-7.  _
+*NB/ The code to extract xy vessel diameter and neuronal calcium traces for figure 3, is also used in supplementary figures 2-4 & supplementary figures 6-7.*
 
 
 # Figure 5
