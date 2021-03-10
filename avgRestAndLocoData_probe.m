@@ -1,39 +1,17 @@
-function avgRestAndLocoData_probe(fname, prefs)
-%
-%function written by Kira, May 2018
-%requires user to have previously run extractRestAndLocoData_probe
-%searches for outputted mat file: Avg4RestPeriods_allTrials_allSess
-%
-%send in topDir, i.e. with multiple groups which are being compared (e.g.
-%HC vs V1, or APOE3 vs APOE4) - this will compare the groups
-%
-%INPUTS -
-%fname : top dir with multiple groups in to be compared, each dir should
-%have mat file in
-%prefs : plot prefs - if want bar charts plotted to compare between groups
-%- this is at the bottom of the code, and is currently hard coded for
-%Kira's HC vs V1 analysis, so may need to update or turn plots off
-%
-%OUTPUTS-
-%nothing outputted into workspace, but will save data and figures into top
-%dir
-%
-%functions needed to run this code:
-%findFolders
+function getBaselineHaemProbe(topDir)
 
-if nargin < 2
-    %plot bar charts to display comparison between groups
-    prefs.plot = 1;
-end
+clear grp; 
 
-%look for all data files to be analysed
-finddatafile = findFolders(fname, ...
-    'Avg4RestnLocoPeriods_allTrials_allSess.mat');
+% WRITTEN APRIL 2020 
+
+%time in seconds to remove before and after loco event to allow for
+%transition time, i.e. so definitely getting rest periods 
+prefs.transitionTime = 1; %seconds 
 
 %find all the subfolders - i.e. groups - in the top dir
-listing=dir(fname);
+listing=dir(topDir);
 for a = 1:size(listing,1)-2
-    if size(listing(2+a).name,2) <= 6
+    if size(listing(2+a).name,2) <= 5
         grpNames{a} = listing(2+a).name;
     else
         grpNames{a} = [];
@@ -44,139 +22,149 @@ grpNames = grpNames(~cellfun('isempty',grpNames));
 
 %loop the groups, extract the data
 for a = 1:size(grpNames,2)
-
+    
+    clearvars -except a grpNames topDir grp prefs
+    
     %inform user of progress
-    disp(['processing file ',num2str(a),'/',num2str(size( ...
-        finddatafile,2))]);
-    disp(grpNames{a}); 
+    disp(grpNames{a});
+
+    [find_mat_files] = findFolders([topDir,filesep,grpNames{a}], ...
+        'contData.mat');
     
-    %load the data
-    load(fullfile(fname,filesep,grpNames{a},filesep, ...
-        'Avg4RestnLocoPeriods_allTrials_allSess.mat'));
-    
-    %REMOVE EMPTY CELLS:
-    %see if there are any empty cells in loco data:
-    emptyInd=cellfun('isempty', dataLocoTrials);
-    %can tell by summing index, any empties are labelled 1
-    if sum(emptyInd) > 0
-        for b = 1:size(emptyInd,2)
-            if emptyInd(b)==1
-                dataLocoTrials{b}=[];
-                
+    for b = 1:size(find_mat_files,2)
+        
+        [expDir,~] = fileparts(find_mat_files{1,b}); 
+        
+        %load data
+        %NB/ order of the haem data:
+        %1-flux, 2-speed, 3-so2, 4-hbo, 5-hbr, 6-hbt, 7-cmro2
+        clear data movement fps time frames; 
+        load(find_mat_files{1,b});
+        
+        %clean loco
+        clear locomotion; 
+        [locomotion] = cleanLoco(movement);
+        [locomotion] = norm_01(locomotion);
+        locomotion(:,find(locomotion<=0.01))=0;
+        
+        %take rest periods only - by detecting loco events, 
+        %finding 1s before and after to account for transition time and 
+        %setting these haem values to NaNs
+        clear locoEvents; 
+        [locoEvents] = findLocoEvents(locomotion,fps);
+        for c = 1:size(locoEvents,2)
+            if locoEvents(1,c)-(round(fps*prefs.transitionTime)) >= 1 && ...
+                    locoEvents(2,c)+(round(fps*prefs.transitionTime)) < size(data,2)
+                data(:,locoEvents(1,c)-(round(fps*prefs.transitionTime))...
+                    :locoEvents(2,c)+(round(fps*prefs.transitionTime)))=NaN;
+            elseif locoEvents(1,c)-round(fps*prefs.transitionTime) >= 1 && ...
+                    locoEvents(2,c)+round(fps*prefs.transitionTime) >= size(data,2)
+                data(:,locoEvents(1,c)-(round(fps*prefs.transitionTime)):end)=NaN;
+            else
+                data(:,1:locoEvents(2,c)+round(fps*prefs.transitionTime))=NaN;
             end
         end
-    end
-    %remove empty cells from loco var
-    dataLocoTrials(cellfun('isempty', dataLocoTrials)) = [];
-    %see if there are any empty cells in rest data:
-    emptyInd=cellfun('isempty', dataRestTrials);
-    %can tell by summing index, any empties are labelled 1
-    if sum(emptyInd) > 0
-        for b = 1:size(emptyInd,2)
-            if emptyInd(b)==1
-                dataRestTrials{b}=[];
-                
+        
+        %now nanmean the remaining hct values to get avg hct during rest
+        for c = 1:size(data,1) %loop 7 haem variables
+            grp{a}.data_avg(b,c) = nanmean(data(c,:));
+            %coefficient of variation - i.e. relative SD, so more
+            %comparable between two groups with v diff means
+            grp{a}.data_cv(b,c) = (nanstd(data(c,:))./nanmean(data(c,:)))*100;
+            grp{a}.expDir{b} = find_mat_files{b};
+            %get animal ID out for each recording 
+            grp{a}.anLabel{b} = extractBefore(extractAfter ...
+                (grp{a}.expDir{b},109),'\');
+            if b == 1
+                grp{a}.anID(b) = 1;
+            elseif strcmp(grp{a}.anLabel(b-1), grp{a}.anLabel(b))
+                grp{a}.anID(b) =  grp{a}.anID(b-1);
+            else
+                grp{a}.anID(b) =  grp{a}.anID(b-1)+1;
             end
+        end %end of loop 7 haem variables 
+
+    end %end of mat files within brain region grp
+    
+end %loop brain region grps
+
+% get out average mean over time and average std over time per animal
+for a = 1:size(grp,2)
+    for b = 1:max(grp{a}.anID)
+        if size(find(grp{a}.anID==b),2)>1
+            grp{a}.dataAvg_anAvg(b,:) = nanmean(grp{a}.data_avg ...
+                (find(grp{a}.anID==b),:));
+            grp{a}.dataCV_anAvg(b,:) = nanmean(grp{a}.data_cv ...
+                (find(grp{a}.anID==b),:));
+        else
+            grp{a}.dataAvg_anAvg(b,:) = grp{a}.data_avg ...
+                (find(grp{a}.anID==b),:);
+            grp{a}.dataCV_anAvg(b,:) = grp{a}.data_cv ...
+                (find(grp{a}.anID==b),:);
         end
     end
-    %remove empty cells from rest var
-    dataRestTrials(cellfun('isempty', dataRestTrials)) = [];
-    
-    %can also put group label into the var - need any folders other than
-    %group labels to come after grp labels
-    dataAvg{a}.label = grpNames{a};
-    
-    %get an average for each session (which had data in)
-    %dim1 is the diff haem param, dim2 is the data during rest/loco period
-    %dataAvg - each cell is diff group; data inside dataAvg is stored
-    %sessionsxhaemParam
-    %rest:
-    for b = 1:size(dataRestTrials,2) %loop sessions with rest data
-        for c = 1:size(dataRestTrials{1},1) %loop haem param
-            %average across rest period
-            dataAvg{a}.rest(b,c)=nanmean(dataRestTrials{1,b}(c,:),2);
-        end %end of loop haem param
-    end %end of loop sessions
-    %loco:
-    for b = 1:size(dataLocoTrials,2) %loop sessions with loco data
-        for c = 1:size(dataLocoTrials{1},1) %loop haem param
-            %average across loco period (dim2)
-            dataAvg{a}.loco(b,c)=nanmean(dataLocoTrials{1,b}(c,:),2);
-        end
-    end %end of loop sessions
-    
-    %state number of trials
-    dataAvg{a}.nTrials_rest = size(dataAvg{a}.rest,1);
-    dataAvg{a}.nTrials_loco = size(dataAvg{a}.loco,1);
-    
-    %take mean, std, and sem across the sessions:
-    %NB/ order of the haem data:
-    %1-flux, 2-speed, 3-so2, 4-hbo, 5-hbr, 6-hbt, 7-cmro2
-    for b = 1:size(dataLocoTrials{1},1) %loop haem param
-        %rest mean:
-        dataAvg{a}.rest_mean(:,b)=nanmean(dataAvg{a}.rest(:,b));
-        %rest sem:
-        [dataAvg{a}.rest_sem(:,b)]=getSEM(dataAvg{a}.rest(:,b));
-        %rest std:
-        dataAvg{a}.rest_std(:,b)=nanstd(dataAvg{a}.rest(:,b));
-        %loco mean:
-        dataAvg{a}.loco_mean(:,b)=nanmean(dataAvg{a}.loco(:,b));
-        %loco sem:
-        [dataAvg{a}.loco_sem(:,b)]=getSEM(dataAvg{a}.loco(:,b));
-        %loco std:
-        dataAvg{a}.loco_std(:,b)=nanstd(dataAvg{a}.loco(:,b));
-    end %end of loop haem param
-    
-end %end of looping folders to extract data
-
-%save the data out into top dir- can be input into SPSS for stats tests
-matfile = fullfile(fname, 'Avg4RestnLocoPeriods_allSess.mat');
-save(matfile, 'dataAvg','-v7.3');
-
-%% plots to save
-
-if prefs.plot == 1
-    
-    %which haem parameters to plot (in preferred plotting order)
-    data2plot = [7; 1; 3];
-    dataLabel = {'cmro2'; 'flux'; 'so2'};
-    colorstring1 = {'g','m','k'}';
-    colorstring2 = {'g.','m.','k.'}';
-    yLabelNm = {'A.U.'; 'A.U.'; '%'};
-    
-    figure;
-    screenSz=get(0,'Screensize');
-    set(gcf, 'Position', [screenSz(1) screenSz(2) screenSz(3) ...
-        screenSz(4)/2]);
-    for a = 1:size(data2plot,1) %loop data to plot
-        subplot(1,3,a);
-        bar(1:4,[dataAvg{1}.rest_mean(data2plot(a)), ...
-            dataAvg{1}.loco_mean(data2plot(a)), ...
-            dataAvg{2}.rest_mean(data2plot(a)), ...
-            dataAvg{2}.loco_mean(data2plot(a))], colorstring1{a});
-        hold on;
-        errorbar(1:4,[dataAvg{1}.rest_mean(data2plot(a)), ...
-            dataAvg{1}.loco_mean(data2plot(a)), ...
-            dataAvg{2}.rest_mean(data2plot(a)), ...
-            dataAvg{2}.loco_mean(data2plot(a))], ...
-            [dataAvg{1}.rest_sem(data2plot(a)), ...
-            dataAvg{1}.loco_sem(data2plot(a)), ...
-            dataAvg{2}.rest_sem(data2plot(a)), ...
-            dataAvg{2}.loco_sem(data2plot(a))], colorstring2{a});
-        xlim([0 5]);
-        title(dataLabel(a));
-        %update to use grp label insteadof hardcode region
-        set(gca, 'XTickLabel', {[grpNames{1},' rest, n',...
-            num2str(dataAvg{1}.nTrials_rest)], ...
-            [grpNames{1},' loco, n', num2str(dataAvg{1}.nTrials_loco)], ...
-            [grpNames{2},' rest, n', num2str(dataAvg{2}.nTrials_rest)], ...
-            [grpNames{2},' loco, n', num2str(dataAvg{2}.nTrials_loco)]});
-        ylabel(yLabelNm(a));
-    end %end of loop data to plot
-    %save plot into exp_dir as png
-    saveas(gcf, fullfile(fname, 'barchart_haemParam_compGrps.png'));
-    close; %close figure
-    
 end
 
-end %end of function
+save('AvgHaem_allSess.mat','grp');
+
+%% plots
+
+haemLabels = {'Flux','Speed','SO2','HbO','Hbr','Hbt','CMRO2'};
+unitLabels = {'A.U.','A.U.','%','A.U.','A.U.','A.U.','A.U.'};
+
+figure;
+for a = 1 : 7 %loop 7 haem vars 
+    if a == 1
+        counter = 0;
+    else
+        counter = counter + 1;
+    end 
+    
+    %plot MEAN over time averaged for each animal:
+    %extract data needed for this plot 
+    clear x1 y1 
+    x1 = [ones(size(grp{1}.dataAvg_anAvg(:,a))); ...
+        ones(size(grp{2}.dataAvg_anAvg(:,a)))*2];
+    y1 = [grp{1}.dataAvg_anAvg(:,a); grp{2}.dataAvg_anAvg(:,a)];
+    %plot mean over time averaged for each animal
+    subplot(7,2,a+counter);
+    [~,p]=ttest2(y1(find(x1==1)),y1(find(x1==2))); 
+    title([haemLabels{a},' Avg, p=', num2str(p)]); clear p; 
+    xlim([0 3]);
+    hold on;
+    ax1 = bar(1,nanmean(y1(find(x1==1),:)));
+    ax2 = bar(2,nanmean(y1(find(x1==2),:)));
+    scatter(x1,y1,'ko', 'LineWidth',1.5);
+    ax1.FaceColor = [.5 0 .5]; %purple
+    ax2.FaceColor = [0.91 0.41 0.17]; %orange
+    xlabel('Region'); ylabel(unitLabels{a});
+    set(gca, 'XTick', []);
+    if a == 1
+        legend({'HC','V1'});
+    end
+    
+    %plot coefficient of var over time averaged for each animal:
+    %extract data needed for this plot - mean 
+    clear x1 y1 
+    x1 = [ones(size(grp{1}.dataCV_anAvg(:,a))); ...
+        ones(size(grp{2}.dataCV_anAvg(:,a)))*2];
+    y1 = [grp{1}.dataCV_anAvg(:,a); grp{2}.dataCV_anAvg(:,a)];
+    %plot mean over time averaged for each animal
+    subplot(7,2,a*2);
+    [~,p]=ttest2(y1(find(x1==1)),y1(find(x1==2))); 
+    title([haemLabels{a},' CV, p=', num2str(p)]); clear p; 
+    xlim([0 3]);
+    hold on;
+    ax1 = bar(1,nanmean(y1(find(x1==1),:)));
+    ax2 = bar(2,nanmean(y1(find(x1==2),:)));
+    scatter(x1,y1,'ko', 'LineWidth',1.5);
+    ax1.FaceColor = [.5 0 .5]; %purple
+    ax2.FaceColor = [0.91 0.41 0.17]; %orange
+    xlabel('Region'); ylabel(unitLabels{a});
+    set(gca, 'XTick', []);
+    
+end
+saveas(gcf, 'allHaemData_Mean_CV_avgPerAn.png');
+
+
+end %end of function 
