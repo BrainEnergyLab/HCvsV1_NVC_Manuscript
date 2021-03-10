@@ -9,7 +9,7 @@ https://www.biorxiv.org/content/10.1101/835728v1
 A-C: extractProbeData.mat, extractRestAndLocoData_probe.mat, avgRestAndLocoData_probe 
 Run these code in the order above to convert the raw oxy-CBF probe data into a mat file, and then find the average CMRO2, CBF and SO2 values during rest periods. 
 
-_NB/ The code to extract baseline haemodynamic data during rest for figure 2, is also used in supplementary figure 10.  _
+*NB/ The code to extract baseline haemodynamic data during rest for figure 2, is also used in supplementary figure 10.*
 
 F-J: extractLineScanData.mat, findDiam_lineScan.mat, linescanDiamAnalysis.mat, linescanVelocityAnalysis.mat, findAvg_RBCV_diam.mat, compareGrps_avgRBCV_diam.mat, extractHaematocrit.mat, extractRBCflux.mat
 Run the top function 'extractLineScanData.mat' to call on the subfunctions which extract the diameter and RBCV from linescan 2P data. Call 'extractHaematocrit.mat' to extract the haematocrit over time, and 'extractRBCflux.mat' to extract the RBCs per second. 
